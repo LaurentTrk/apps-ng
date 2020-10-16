@@ -22,7 +22,7 @@ const ButtonWrapper = styled.div`
  */
 const AppHeader = () => (
   <Container>
-    <h1>Hello World!</h1>
+    <h1>Secret Note</h1>
   </Container>
 )
 
@@ -32,41 +32,28 @@ const AppHeader = () => (
 const AppBody = observer(() => {
   const { appRuntime, helloworldApp } = useStore();
   const [, setToast] = useToasts()
-  const { state: inc, bindings } = useInput('1')
+  const { state: note, bindings } = useInput('')
 
-  /**
-   * Updates the counter by querying the helloworld contract
-   * The type definitions of `GetCount` request and response can be found at contract/helloworld.rs
-   */
-  async function updateCounter () {
-    if (!helloworldApp) return
-    try {
-      const response = await helloworldApp.queryCounter(appRuntime)
-      // Print the response in the original to the console
-      console.log('Response::GetCount', response);
+    async function updateNote () {
+        if (!helloworldApp) return
+        try {
+            const response = await helloworldApp.queryNote(appRuntime)
+            // Print the response in the original to the console
+            console.log('Response::GetNote', response);
 
-      helloworldApp.setCounter(response.GetCount.count)
-    } catch (err) {
-      setToast(err.message, 'error')
-    }
-  }
-
-  /**
-   * The `increment` transaction payload object
-   * It follows the command type definition of the contract (at contract/helloworld.rs)
-   */
-  const incrementCommandPayload = useMemo(() => {
-    const num = parseInt(inc)
-    if (isNaN(num) || inc <= 0) {
-      return undefined
-    } else {
-      return {
-        Increment: {
-          value: num
+            helloworldApp.setNote(response.GetNote.note)
+        } catch (err) {
+            setToast(err.message, 'error')
         }
-      }
     }
-  }, [inc])
+
+    const setNoteCommandPayload = useMemo(() => {
+        return {
+            SetNote: {
+                note: note
+            }
+        }
+    }, [note])
 
   return (
     <Container>
@@ -77,38 +64,39 @@ const AppBody = observer(() => {
       </section>
       <Spacer y={1}/>
 
-      <h3>Counter</h3>
-      <section>
-        <div>Counter: {helloworldApp.counter === null ? 'unknown' : helloworldApp.counter}</div>
-        <div><Button onClick={updateCounter}>Update</Button></div>
-      </section>
-      <Spacer y={1}/>
+        <h3>Secret Note</h3>
+        <section>
+            <div>Secret note value: {helloworldApp.note === null ? 'unknown' : helloworldApp.note}</div>
+            <Spacer y={1}/>
+            <div><Button onClick={updateNote}>Reveal</Button></div>
+        </section>
+        <Spacer y={1}/>
 
-      <h3>Increment Counter</h3>
-      <section>
-        <div>
-          <Input label="By" {...bindings} />
-        </div>
-        <ButtonWrapper>
-          {/**  
-            * PushCommandButton is the easy way to send confidential contract txs.
-            * Below it's configurated to send HelloWorld::Increment()
-            */}
-          <PushCommandButton
-              // tx arguments
-              contractId={CONTRACT_HELLOWORLD}
-              payload={incrementCommandPayload}
-              // display messages
-              modalTitle='HelloWorld.Increament()'
-              modalSubtitle={`Increment the counter by ${inc}`}
-              onSuccessMsg='Tx succeeded'
-              // button appearance
-              buttonType='secondaryLight'
-              icon={PlusIcon}
-              name='Send'
-            />
-        </ButtonWrapper>
-      </section>
+        <section>
+            <div>
+                <Input label="New secret note" {...bindings} />
+            </div>
+            <ButtonWrapper>
+                {/**
+                 * PushCommandButton is the easy way to send confidential contract txs.
+                 * Below it's configurated to send HelloWorld::Increment()
+                 */}
+                <PushCommandButton
+                    // tx arguments
+                    contractId={CONTRACT_HELLOWORLD}
+                    payload={setNoteCommandPayload}
+                    // display messages
+                    modalTitle='Remember my secret note'
+                    modalSubtitle={`Setting secret note to '${note}'`}
+                    onSuccessMsg='Tx succeeded'
+                    // button appearance
+                    buttonType='secondaryLight'
+                    icon={PlusIcon}
+                    name='Change'
+                />
+            </ButtonWrapper>
+        </section>
+
 
     </Container>
   )
